@@ -1,0 +1,28 @@
+{
+  "name": "reader-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Original reader building blocks: safe URL ingestion, article extraction, durable highlight anchoring.",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "main": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "dompurify": "^3.4.17",
+    "jsdom": "^29.1.1",
+    "undici": "^8.12.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}
