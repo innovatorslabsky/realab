@@ -6,3 +6,5 @@ export * from './ingest/saveDocument.ts';
 export * from './anchor/textQuote.ts';
 export * from './anchor/domOffsets.ts';
 export * from './types.ts';
+export * from './re/shape.ts';
+export * from './re/harStructure.ts';

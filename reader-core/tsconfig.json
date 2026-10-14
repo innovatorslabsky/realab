@@ -10,7 +10,8 @@
     "lib": ["ES2023", "DOM"],
     "types": ["node"],
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true
   },
   "include": ["src", "test"]
 }
