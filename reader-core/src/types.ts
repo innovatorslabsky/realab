@@ -18,7 +18,12 @@ export const createHighlightSchema = z
     color: z.enum(HIGHLIGHT_COLORS).default('yellow'),
     note: z.string().max(10_000).optional(),
     tags: z.array(z.string().min(1).max(64)).max(20).default([]),
-    /** `contentHash` of the document version the anchor was made against. */
+    /**
+     * Where the anchor's text lives. Articles are one text, so omit it; an EPUB anchors per chapter and a
+     * PDF per page, because each has its own text coordinate space.
+     */
+    unit: z.object({ kind: z.enum(['chapter', 'page']), index: z.number().int().nonnegative() }).optional(),
+    /** `contentHash` of the text the anchor was made against (the article, chapter or page text). */
     contentHash: z.string().length(64),
   })
   .refine((h) => h.anchor.end > h.anchor.start, { message: 'anchor.end must be greater than anchor.start' });

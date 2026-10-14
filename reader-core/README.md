@@ -5,6 +5,10 @@ Original building blocks for a read-it-later reader. No Readwise code is used or
 - `src/net` — SSRF-safe HTML fetching (`safeFetchHtml`, `assertSafeUrl`, `isBlockedAddress`)
 - `src/ingest` — `saveUrl` / `saveHtml`, `extractArticle` (Readability + DOMPurify), `normalizeUrl`
 - `src/anchor` — durable highlight anchors (`createAnchor`, `resolveAnchor`) and DOM offset helpers
+- `src/ingest/upload.ts` — `ingestUpload` routes PDF/EPUB uploads by content
+- `src/feed` — RSS/Atom/RDF/JSON Feed parsing, polling with ETag, feed discovery
+- `src/epub`, `src/pdf` — EPUB and PDF parsers (bounded, sanitized, DRM/password refused)
+- `src/re`, `tools/` — structure-only HAR and DOM capture tools for reverse engineering (`docs/re-capture-protocol.md`)
 - `src/types.ts` — zod schemas for highlights and reading progress
 
 ```

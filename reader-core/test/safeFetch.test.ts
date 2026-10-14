@@ -74,7 +74,7 @@ describe('safeFetchHtml', () => {
   });
 
   it('rejects non-HTML and error statuses', async () => {
-    await expect(safeFetchHtml(`${s.base}/json`, s.fetchOptions)).rejects.toThrow(/Not an HTML page/);
+    await expect(safeFetchHtml(`${s.base}/json`, s.fetchOptions)).rejects.toThrow(/Unsupported content type/);
     await expect(safeFetchHtml(`${s.base}/missing`, s.fetchOptions)).rejects.toBeInstanceOf(FetchError);
   });
 

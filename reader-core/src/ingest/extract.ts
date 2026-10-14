@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Readability } from '@mozilla/readability';
 import createDOMPurify from 'dompurify';
 import { JSDOM, VirtualConsole } from 'jsdom';
+import { htmlToText } from './html.ts';
 
 export class NotReadableError extends Error {
   override name = 'NotReadableError';
@@ -67,6 +68,12 @@ export function countWords(text: string): { words: number; cjkChars: number } {
   return { words, cjkChars };
 }
 
+/** Words for Latin-script text plus individual CJK characters (which have no spaces to count). */
+export function totalWords(text: string): number {
+  const { words, cjkChars } = countWords(text);
+  return words + cjkChars;
+}
+
 export function readingMinutes(text: string): number {
   const { words, cjkChars } = countWords(text);
   return Math.max(1, Math.ceil(words / 230 + cjkChars / 500));
@@ -112,8 +119,7 @@ export function extractArticle(html: string, pageUrl: string, options: ExtractOp
   if (!parsed?.content) throw new NotReadableError('No article content could be extracted');
 
   const contentHtml = sanitizeArticleHtml(parsed.content);
-  const root = new JSDOM(`<!doctype html><body><div id="r">${contentHtml}</div>`).window.document.getElementById('r')!;
-  const text = root.textContent ?? '';
+  const text = htmlToText(contentHtml);
   if (text.trim().length < (options.minTextLength ?? 200)) {
     throw new NotReadableError('Extracted text is too short to be an article');
   }
@@ -129,7 +135,7 @@ export function extractArticle(html: string, pageUrl: string, options: ExtractOp
     canonicalUrl: absolute(meta0.canonical, pageUrl),
     contentHtml,
     text,
-    wordCount: countWords(text).words + countWords(text).cjkChars,
+    wordCount: totalWords(text),
     readingMinutes: readingMinutes(text),
     contentHash: createHash('sha256').update(text).digest('hex'),
   };

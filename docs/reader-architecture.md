@@ -1,6 +1,6 @@
 # Reader Architecture — kiến trúc "reader kiểu Readwise" cho MindFerry
 
-Trạng thái: **bản thiết kế + 3 cơ chế lõi đã có code và test** (`reader-core/`). Phần còn lại là thiết kế, chưa code.
+Trạng thái: **bản thiết kế + các cơ chế lõi đã có code và test** (`reader-core/`: bài web, PDF, EPUB, RSS, neo highlight, công cụ bắt cấu trúc để reverse engineer). Phần còn lại là thiết kế, chưa code.
 
 ## 0. Nói thật về nguồn gốc
 
@@ -26,8 +26,11 @@ Trạng thái: **bản thiết kế + 3 cơ chế lõi đã có code và test** 
 | Nhớ chỗ đang đọc | Lưu **text offset**, không lưu pixel cuộn | 🟡 schema (`types.ts`), chưa có UI/API |
 | Lưu từ extension / email | `saveHtml()` không cần mạng | ✅ hàm có; extension/email chưa |
 | Trang render bằng JS (SPA) | Headless browser (Playwright) ở worker cách ly | ❌ chưa — xem §4 |
-| PDF / EPUB | Parser riêng, anchor theo văn bản đã trích | ❌ chưa |
-| RSS / newsletter | Poller + hộp thư nhận email | ❌ chưa |
+| PDF | `pdfjs-dist` (không chạy JS nhúng), văn bản theo trang, mục lục, cờ `needsOcr` | ✅ code + test (`pdf/`) — §3b |
+| EPUB | zip an toàn → OPF/spine/toc → chương đã sanitize + ảnh đã kiểm tra | ✅ code + test (`epub/`) — §3b |
+| Nhận file tải lên | `ingestUpload`: định tuyến theo **nội dung**, không tin tên file/MIME | ✅ code + test |
+| RSS / Atom / JSON Feed | Parse + GET có điều kiện (ETag/If-Modified-Since) + tự tìm feed từ trang | ✅ code + test (`feed/`) — §3b |
+| Newsletter qua email, lịch poll feed | Hộp thư nhận email; scheduler | ❌ chưa |
 | Tìm kiếm | MVP `$text`; sau này vector (pgvector) | ❌ chưa — xem §6 |
 | Offline + đồng bộ đa thiết bị | Local-first (IndexedDB) + sync theo `updatedAt`/op log | ❌ chưa — rủi ro cao nhất, xem §7 |
 | AI (tóm tắt, hỏi đáp tài liệu) | Dùng lại chat/agents/MCP của MindFerry | ❌ chưa — nối ở §5 |
@@ -76,6 +79,53 @@ Các quyết định đáng nhớ (mỗi cái có test):
 - Egress qua HTTP proxy của hạ tầng: `undici.Agent` ở đây kết nối thẳng, chưa tích hợp proxy. Nếu deploy sau proxy bắt buộc,
   phải kiểm lại lớp chặn IP (lúc đó proxy mới là nơi resolve DNS).
 - Chưa tôn trọng `robots.txt`, chưa có paywall handling, chưa có chính sách lưu bản sao nội dung có bản quyền (§9).
+
+## 3b. PDF, EPUB, RSS (đã code)
+
+Cả ba đi qua cùng nguyên tắc: **không tin đầu vào, chặn theo giới hạn khai báo trước khi xử lý, sanitize mọi HTML, mỗi chốt chặn có test
+và đã được thử phá (mutation)**.
+
+**Mỗi định dạng có một "không gian toạ độ" riêng cho highlight** — nên highlight mang thêm `unit`:
+
+| Định dạng | Anchor nằm trong | `unit` | Ghi chú |
+|---|---|---|---|
+| Bài web | `textContent` của `contentHtml` | — | như §4 |
+| EPUB | `textContent` của `chapters[i].contentHtml` | `{kind:'chapter', index}` | mỗi chương một văn bản, `contentHash` theo chương |
+| PDF | `pages[i].anchorText` | `{kind:'page', index}` | xem hợp đồng bên dưới |
+
+**EPUB** (`parseEpub`)
+- Giải nén bằng `fflate`. Em đã thử thực tế: khi header khai man kích thước giải nén, fflate **cắt đúng ở kích thước khai**, không phình bộ nhớ;
+  vì vậy chặn theo `originalSize` (kích thước giải nén khai báo — còn `size` là kích thước *nén*, dễ nhầm) **trước khi** giải nén là đủ.
+- Giới hạn: kích thước tải lên, số entry, tổng dung lượng giải nén, dung lượng mỗi chương và mỗi ảnh.
+- Đường dẫn: mọi `href` đi qua `resolveZipPath` (từ chối `..` thoát gốc, đường dẫn tuyệt đối, URL scheme); entry tên `../` bị bỏ qua.
+- **DRM: từ chối** (`EpubDrmError`), không cố giải mã. Làm xáo trộn font (font obfuscation) thì không phải DRM nên vẫn đọc được.
+- XHTML được parse bằng **XML trước** (HTML parser biến `<a id="x"/>` thành thẻ không đóng, nuốt phần còn lại của trang), sách cẩu thả thì quay về HTML.
+- HTML ra khỏi parser **không còn `src`/`href` nội bộ**: ảnh mang `data-epub-resource="<đường dẫn trong zip>"`, link nội bộ mang
+  `data-epub-link="<chương>#<fragment>"`. Client/API phục vụ ảnh từ `resources` và tự xử lý điều hướng.
+- Ảnh chỉ nhận khi **byte thật** là PNG/JPEG/GIF/WebP (kiểu lấy từ byte, không tin manifest); SVG bị loại vì có thể chứa script.
+  Chương không bao giờ trỏ tới ảnh đã bị loại.
+- Chưa làm: CSS/font của sách (cố ý bỏ), SVG, audio/video, fixed-layout EPUB, `epub:type` footnote popup, EPUB có nhiều rootfile.
+
+**PDF** (`parsePdf`)
+- `pdfjs-dist` với `isEvalSupported:false`, không dùng font hệ thống, không auto-fetch, **không bật scripting** — JS nhúng trong PDF không chạy.
+- Giới hạn: dung lượng, số trang (`truncated` báo rõ), ký tự mỗi trang, tổng thời gian; có `AbortSignal` để huỷ giữa chừng.
+- Cần mật khẩu → `PdfEncryptedError` (không thử đoán). Ít chữ → `needsOcr: true` (có thể chỉ là ảnh quét; quyết định OCR thuộc về app).
+- Mỗi trang có **hai văn bản**: `anchorText` (nối nguyên `str` của các text item — đây là không gian toạ độ highlight) và `text`
+  (gộp dòng thành đoạn, nối lại từ bị gạch ngang cuối dòng, chỉ khi dòng sau bắt đầu bằng chữ thường).
+- **Hợp đồng client chưa được kiểm chứng:** client dựng text layer của pdf.js phải nối `textContent` các span theo thứ tự để ra đúng `anchorText`.
+  Điều này chỉ được xác nhận ở phía server; cần một test tích hợp trên trình duyệt thật trước khi tin.
+- Phát hiện khi thử: pdf.js **bỏ chữ nằm ngoài khung trang** — hữu ích (chặn "chữ ẩn" ngoài trang) nhưng cũng có nghĩa là PDF lỗi toạ độ có thể mất chữ.
+- Chưa làm: thứ tự đọc cho PDF nhiều cột (hiện theo thứ tự content stream), bảng, công thức, OCR, ảnh trang để hiển thị, hạn chế quyền sao chép của PDF
+  (cờ owner-permission) — **chưa quyết định có tôn trọng hay không**, cần chốt chính sách.
+
+**RSS / Atom / JSON Feed** (`parseFeed`, `fetchFeed`, `subscribeToUrl`)
+- Hỗ trợ RSS 2.0, RSS 1.0 (RDF), Atom 1.0, JSON Feed 1.x. XML dùng parser của jsdom; mọi `<!ENTITY` bị từ chối thẳng (chặn entity bomb và XXE).
+- Mỗi item có `guid` ổn định (guid → url → hash) và `feedItemKey(feedUrl, guid)` để chống trùng giữa các lần poll.
+- HTML trong item được tuyệt đối hoá URL rồi sanitize; Atom `type="text"` được escape, **không** diễn giải thành markup.
+- Poll rẻ: gửi `If-None-Match`/`If-Modified-Since`, nhận 304 thì không parse.
+- Người dùng dán địa chỉ trang web: `subscribeToUrl` tự đọc `<link rel="alternate">` rồi lấy feed (một bước, vẫn qua bộ fetch an toàn).
+- Nhiều feed chỉ chứa đoạn tóm tắt; muốn bài đầy đủ thì lưu `item.url` bằng `saveUrl`. **Việc đó là hành vi của ứng dụng, chưa nối sẵn.**
+- Chưa làm: lịch poll và backoff, giới hạn số feed/người dùng, OPML import/export, đọc `<media:content>`, podcast.
 
 ## 4. Highlight bền vững (đã code)
 
@@ -131,8 +181,9 @@ sau khi MVP online chạy ổn.
 
 ## 8. Chưa làm (liệt kê để khỏi hiểu nhầm là xong)
 
-HTTP layer & persistence · JS-rendered pages · PDF/EPUB · RSS/newsletter · browser extension · UI · offline/sync ·
-tags & filter · quota/rate-limit theo người dùng · AI features · kiểm thử tải · tích hợp proxy egress.
+HTTP layer & persistence · JS-rendered pages · newsletter qua email · lịch poll feed · OCR · PDF nhiều cột · browser extension · UI ·
+offline/sync · tags & filter · quota/rate-limit theo người dùng · AI features · kiểm thử tải · tích hợp proxy egress ·
+kiểm chứng hợp đồng `anchorText` của PDF trên trình duyệt thật.
 
 ## 9. Ranh giới pháp lý (vì mục tiêu là bán sản phẩm)
 
@@ -144,9 +195,13 @@ tags & filter · quota/rate-limit theo người dùng · AI features · kiểm t
   có cơ chế gỡ khi bị yêu cầu.
 - Dữ liệu Readwise của người dùng (nếu tích hợp) → dùng API chính thức với token của chính họ.
 
-## 10. Quyết định cần anh chốt
+## 10. Quyết định
 
-1. MVP chỉ **URL → bài đọc + highlight**, hay cần PDF/EPUB/RSS ngay? (quyết định phần lớn công sức)
+Đã chốt: MVP gồm **PDF, EPUB, RSS**; reverse engineer bằng **tài khoản của chủ dự án, chỉ lấy cấu trúc** (công cụ ở
+`reader-core/tools/`, quy trình ở [`re-capture-protocol.md`](re-capture-protocol.md)); sau này mở public để người dùng tự lưu nội dung của họ.
+
+Còn mở:
+1. Chính sách với PDF có **hạn chế sao chép** (owner permissions): tôn trọng, hay chỉ cảnh báo?
 2. Reader nằm trong cùng deployment MindFerry (multi-tenant) hay tách instance?
-3. Có cần headless browser cho trang JS ở MVP không? (bù lại là phải dựng sandbox)
-4. Có muốn em tiếp tục **bước Reverse Engineer thật** (G1–G3 trong plan) bằng tài khoản Readwise của anh, hay thiết kế độc lập như hiện tại là đủ?
+3. Có cần headless browser cho trang JS ở MVP không? (kéo theo sandbox)
+4. Newsletter qua email: tự dựng hộp thư nhận, hay dùng dịch vụ inbound email bên thứ ba?
