@@ -1,7 +1,7 @@
 # landing
 
 Landing page HTML/CSS/JS thuần (không build step), dựng lại **cấu trúc và hệ thiết kế** đã phân tích ở
-`docs/viraai-landing-analysis.md`. Thương hiệu, chữ, giá và số liệu là **giữ chỗ**; không dùng logo, video, ảnh hay nguyên văn của trang gốc.
+`docs/viraai-landing-analysis.md`. Thương hiệu là **Skyloom**; giá và số liệu so sánh vẫn là **giữ chỗ**; không dùng logo, video, ảnh hay nguyên văn của trang gốc.
 
 ```
 cd landing && python3 -m http.server 8000   # mở http://localhost:8000

@@ -1,6 +1,6 @@
-// Toàn bộ chữ và giá nằm ở đây. Nội dung là GIỮ CHỖ do mình viết, hãy thay bằng thông tin thật của anh.
+// Toàn bộ chữ và giá nằm ở đây. Tên thương hiệu: Skyloom. Giá và số liệu so sánh vẫn là GIỮ CHỖ, hãy thay bằng số thật.
 window.CONTENT = {
-  brand: "BrandAI",
+  brand: "Skyloom",
   features: [
     { title: "Mô hình A: hình đẹp, có âm thanh", text: "Clip ngắn chất lượng cao kèm tiếng, hợp cho bán hàng, giáo dục và hoạt hình.",
       bullets: ["Clip 8 giây có âm thanh", "Nâng lên 1080p", "Nhiều video song song trên mỗi tài khoản"], media: "Video minh hoạ mô hình A" },
@@ -8,7 +8,7 @@ window.CONTENT = {
       bullets: ["Clip tới 30 giây", "Dọc 9:16 hoặc ngang 16:9", "Hàng trăm clip mỗi ngày"], media: "Video minh hoạ mô hình B" },
     { title: "Tạo ảnh hàng loạt", text: "Mỗi dòng một mô tả, chạy cả danh sách một lượt, rồi biến ảnh thành khung đầu của video.",
       bullets: ["Độ nét 1K và 2K", "Cả lô trong một lượt", "Từ ảnh sang video một chạm"], media: "Ảnh minh hoạ" },
-    { title: "Đa luồng, tốc độ cao", text: "Đưa cả kịch bản vào hàng đợi, phần mềm chia việc cho nhiều tài khoản chạy cùng lúc.",
+    { title: "Đa luồng, tốc độ cao", text: "Đưa cả kịch bản vào hàng đợi, Skyloom chia sợi cho nhiều tài khoản chạy cùng lúc.",
       bullets: ["Tối đa 8 luồng, hoặc không giới hạn", "Tự xoay tài khoản khi hết lượt", "Tự thử lại khi gặp lỗi tạm"],
       queue: [["Sóng biển lúc hoàng hôn", "Đang render"], ["Mở hộp sản phẩm từ trên xuống", "Đang tải về"], ["Núi lúc bình minh, sương tan", "Đang render"], ["Phố cổ về đêm", "✓ Xong"]] }
   ],
@@ -24,9 +24,9 @@ window.CONTENT = {
   compare: [
     { name: "Nền tảng X", price: "3.000.000đ/tháng", note: "Trả theo credit, mua theo gói", ti: 100 },
     { name: "Nền tảng Y", price: "2.600.000đ/tháng", note: "Trả theo credit, mua theo gói", ti: 87 },
-    { name: "BrandAI", price: "299.000đ/tháng", note: "Trả theo phần mềm, số video không giới hạn", ti: 10, chinh: true }
+    { name: "Skyloom", price: "299.000đ/tháng", note: "Trả theo phần mềm, số video không giới hạn", ti: 10, chinh: true }
   ],
-  compareNote: "Số liệu so sánh minh hoạ, cần thay bằng số có nguồn và ngày tham chiếu trước khi đăng.",
+  compareNote: "Số liệu so sánh chỉ minh hoạ. Hãy thay bằng số có nguồn và ngày tham chiếu trước khi đăng.",
   models: {
     a: { label: "Mô hình A", desc: "Hình đẹp, clip 8 giây có âm thanh, tải bản 1080p." },
     b: { label: "Mô hình B", desc: "Nhanh, nhẹ máy, chạy đều hàng trăm clip mỗi ngày." }
