@@ -56,7 +56,7 @@ Chưa xác nhận được nhà cung cấp nào có **video miễn phí** qua AP
 ## Bước tiếp theo
 
 1. Chọn nhà cung cấp video đầu tiên, đọc tài liệu và bảng giá hiện hành, viết bộ chuyển đổi (submit + `pollUntilDone`).
-2. Lưu khoá bằng keychain của hệ điều hành; màn hình cài đặt nhà cung cấp.
-3. Vỏ ứng dụng (Tauri hoặc Electron) + màn hình lô: dán danh sách, xem báo giá, tiến độ, huỷ.
+2. ~~Lưu khoá bằng kho khoá hệ điều hành + màn hình nhà cung cấp~~ — đã có (`safeStorage`, từ chối lưu khi không có keyring).
+3. ~~Vỏ ứng dụng + màn hình lô~~ — đã có ở `skyloom-app/` (Electron). Còn thiếu: đóng gói bộ cài, thử Windows/macOS.
 4. Lưu lịch sử lô và kho prompt cục bộ (SQLite).
 5. Điều khoản/giấy phép: kiểm tra từng nhà cung cấp trước khi cho người dùng bật.

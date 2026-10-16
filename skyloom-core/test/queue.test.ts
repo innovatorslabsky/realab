@@ -107,3 +107,11 @@ describe('JobQueue', () => {
     expect(a.calls).toBe(0);
   });
 });
+
+describe('mockProvider', () => {
+  it('fails exactly the first N calls even when calls overlap', async () => {
+    const a = mockProvider({ id: 'a', kinds: ['video'], failFirst: 1, maxConcurrent: 5, delay: () => new Promise((r) => setTimeout(r, 5)) });
+    const results = await Promise.allSettled([1, 2, 3].map(() => a.run(video, new AbortController().signal)));
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+  });
+});

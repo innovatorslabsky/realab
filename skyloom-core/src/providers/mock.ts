@@ -24,14 +24,14 @@ export function mockProvider(c: MockConfig): Provider & { calls: number } {
     calls: 0,
     estimate: (): MicroUsd => c.costPerCall ?? 0,
     async run(call: Call): Promise<Output> {
-      p.calls++;
+      const n = ++p.calls; // capture: concurrent calls must not share the counter across the await
       await c.delay?.();
-      if (p.calls <= (c.failFirst ?? 0)) {
+      if (n <= (c.failFirst ?? 0)) {
         const w = c.failWith ?? { retryable: true };
-        throw new ProviderError(`mock ${c.id} failure #${p.calls}`, { retryable: w.retryable, ...(w.retryAfterMs !== undefined ? { retryAfterMs: w.retryAfterMs } : {}) });
+        throw new ProviderError(`mock ${c.id} failure #${n}`, { retryable: w.retryable, ...(w.retryAfterMs !== undefined ? { retryAfterMs: w.retryAfterMs } : {}) });
       }
       if (call.kind === 'text') return { text: `Scene: ${call.prompt}` };
-      return { media: { url: `mock://${c.id}/${p.calls}`, mime: call.kind === 'video' ? 'video/mp4' : 'image/png' } };
+      return { media: { url: `mock://${c.id}/${n}`, mime: call.kind === 'video' ? 'video/mp4' : 'image/png' } };
     },
   };
   return p;
